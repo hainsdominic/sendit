@@ -6,11 +6,12 @@ use std::{
 };
 
 use sendit::{
+    chain::BlockChain,
     operations::{run_operation, Operations},
     peertable::PeerTable,
 };
 
-fn handle_client(mut stream: TcpStream, peer_table: PeerTable) {
+fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: BlockChain) {
     println!("New client: {:?}", stream.peer_addr().unwrap());
     let mut buffer = [0; 1024];
     loop {
@@ -27,7 +28,7 @@ fn handle_client(mut stream: TcpStream, peer_table: PeerTable) {
 
         let message = Operations::from_str(&raw_message).unwrap();
 
-        let mut result = run_operation(&message, &peer_table);
+        let mut result = run_operation(message, &peer_table, &mut blockchain);
 
         result.push_str("\n");
 
@@ -40,14 +41,16 @@ fn main() -> std::io::Result<()> {
     let addr = "192.168.11.183:5000";
     let listener = TcpListener::bind(addr)?;
     let peer_table = PeerTable::new();
+    let blockchain = BlockChain::new();
 
     println!("Listening on {}", addr);
 
     thread::scope(|s| {
         for stream in listener.incoming() {
             let peer_table = peer_table.clone();
+            let blockchain = blockchain.clone();
             s.spawn(move || {
-                handle_client(stream.unwrap(), peer_table);
+                handle_client(stream.unwrap(), peer_table, blockchain);
             });
         }
     });

@@ -1,10 +1,15 @@
 use std::str::FromStr;
 
-use crate::peertable::{PeerTable, PublicKey, IP};
+use crate::{
+    chain::{BlockChain, BlockInput},
+    peertable::{PeerTable, PublicKey, IP},
+};
 
 pub enum Operations {
     AddPeer(PublicKey, IP),
     GetPeer(PublicKey),
+    AddBlock(BlockInput),
+    MineBlock(BlockInput),
 }
 
 impl FromStr for Operations {
@@ -26,7 +31,11 @@ impl FromStr for Operations {
     }
 }
 
-pub fn run_operation(operation: &Operations, peer_table: &PeerTable) -> String {
+pub fn run_operation(
+    operation: Operations,
+    peer_table: &PeerTable,
+    blockchain: &mut BlockChain,
+) -> String {
     match operation {
         Operations::AddPeer(public_key, ip) => {
             match peer_table.add_peer(public_key.to_string(), ip.to_string()) {
@@ -41,5 +50,12 @@ pub fn run_operation(operation: &Operations, peer_table: &PeerTable) -> String {
                 None => "Peer not found".to_string(),
             }
         }
+        Operations::AddBlock(block_input) => {
+            let block = blockchain.input_to_block(block_input);
+            blockchain.add_pending_block(block);
+            "Block added".to_string()
+        }
+
+        _ => "Invalid operation".to_string(),
     }
 }
