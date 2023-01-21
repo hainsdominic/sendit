@@ -28,6 +28,7 @@ impl BlockChain {
     pub fn add_pending_block(&self, block: Block) {
         let mut data = self.data.lock().unwrap();
         data.add_pending_block(block);
+        println!("Pending blocks: {:?}", data.pending_blocks);
     }
 
     pub fn add_block(&self, block: Block) {
@@ -46,6 +47,7 @@ impl BlockChain {
     }
 }
 
+#[derive(Debug)]
 struct BlockChainData {
     blocks: Vec<Block>,
     nb_blocks: u32,
@@ -87,7 +89,7 @@ impl BlockChainData {
         let block = self
             .pending_blocks
             .iter()
-            .position(|b| b.file_hash == input.file_hash)
+            .position(|b| b.file_hash == input.file_hash && b.receiver == input.receiver)
             .map(|i| self.pending_blocks.remove(i));
 
         match block {
@@ -95,6 +97,7 @@ impl BlockChainData {
                 b.prev_hash = Some(self.blocks.last().unwrap().hash.clone().unwrap());
                 b.hash();
                 self.add_block(b);
+                println!("Blocks: {:?}", self.blocks);
                 Ok(())
             }
             None => {
@@ -104,10 +107,15 @@ impl BlockChainData {
     }
 
     pub fn input_to_block(&self, input: BlockInput) -> Block {
-        Block::new(input, self.nb_blocks + 1)
+        Block::new(
+            input,
+            self.nb_blocks + 1,
+            self.blocks.last().unwrap().hash.clone().unwrap(),
+        )
     }
 }
 
+#[derive(Debug)]
 pub struct Block {
     index: u32,
     timestamp: u128,
@@ -119,8 +127,8 @@ pub struct Block {
 }
 
 impl Block {
-    fn new(input: BlockInput, index: u32) -> Block {
-        let mut block = Block {
+    fn new(input: BlockInput, index: u32, prev_hash: String) -> Block {
+        Block {
             index,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -130,10 +138,8 @@ impl Block {
             receiver: input.receiver,
             file_hash: input.file_hash,
             hash: None,
-            prev_hash: None,
-        };
-        block.hash();
-        block
+            prev_hash: Some(prev_hash),
+        }
     }
 
     fn hash(&mut self) {

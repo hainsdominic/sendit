@@ -26,9 +26,9 @@ fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: B
 
         let raw_message = raw_message.trim_end_matches("\r\n");
 
-        let message = Operations::from_str(&raw_message).unwrap();
+        let operation = Operations::from_str(&raw_message).unwrap();
 
-        let mut result = run_operation(message, &peer_table, &mut blockchain);
+        let mut result = run_operation(operation, &peer_table, &mut blockchain);
 
         result.push_str("\n");
 
@@ -38,7 +38,7 @@ fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: B
 }
 
 fn main() -> std::io::Result<()> {
-    let addr = "192.168.11.183:5000";
+    let addr = "0.0.0.0:5000";
     let listener = TcpListener::bind(addr)?;
     let peer_table = PeerTable::new();
     let blockchain = BlockChain::new();
