@@ -1,14 +1,14 @@
-use std::str::FromStr;
+use std::{net::TcpStream, str::FromStr};
 
 use log::{info, warn};
 
 use crate::{
     chain::{BlockChain, BlockInput},
-    peertable::{PeerTable, PublicKey, IP},
+    peertable::{PeerTable, PublicKey},
 };
 
 pub enum Operations {
-    AddPeer(PublicKey, IP),
+    AddPeer(PublicKey),
     GetPeer(PublicKey),
     AddBlock(BlockInput),
     MineBlock(BlockInput),
@@ -27,8 +27,7 @@ impl FromStr for Operations {
         match operation {
             "add_peer" => {
                 let public_key = parts.next().unwrap();
-                let ip = parts.next().unwrap();
-                Ok(Operations::AddPeer(public_key.to_string(), ip.to_string()))
+                Ok(Operations::AddPeer(public_key.to_string()))
             }
             "get_peer" => {
                 let public_key = parts.next().unwrap();
@@ -61,10 +60,14 @@ pub fn run_operation(
     operation: Operations,
     peer_table: &PeerTable,
     blockchain: &mut BlockChain,
+    stream: &TcpStream,
 ) -> String {
     match operation {
-        Operations::AddPeer(public_key, ip) => {
-            match peer_table.add_peer(public_key.to_string(), ip.to_string()) {
+        Operations::AddPeer(public_key) => {
+            match peer_table.add_peer(
+                public_key.to_string(),
+                stream.peer_addr().unwrap().ip().to_string(),
+            ) {
                 Ok(_) => {
                     log::info!("Peer added");
                     "Peer added".to_string()

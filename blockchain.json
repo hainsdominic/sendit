@@ -7,23 +7,5 @@
     "file_hash": "foo",
     "hash": "genesis",
     "prev_hash": "pre_genesis"
-  },
-  {
-    "index": 1,
-    "timestamp": 1674358858701,
-    "sender": "bar",
-    "receiver": "baz",
-    "file_hash": "foo",
-    "hash": "86bdac14f73067a20a3514aa151126fac110771a5ad5fa8bc2fd3a245fa126f0",
-    "prev_hash": "genesis"
-  },
-  {
-    "index": 2,
-    "timestamp": 1674359054114,
-    "sender": "bong",
-    "receiver": "boum",
-    "file_hash": "bin",
-    "hash": "95a9a4c3641d24cae69f51f3303c7c40ed592fc6a00700293cade6a7c44b2051",
-    "prev_hash": "86bdac14f73067a20a3514aa151126fac110771a5ad5fa8bc2fd3a245fa126f0"
   }
 ]

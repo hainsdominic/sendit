@@ -29,7 +29,7 @@ fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: B
 
         let operation = Operations::from_str(&raw_message).unwrap();
 
-        let mut result = run_operation(operation, &peer_table, &mut blockchain);
+        let mut result = run_operation(operation, &peer_table, &mut blockchain, &stream);
 
         result.push_str("\n");
 
