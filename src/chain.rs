@@ -1,7 +1,9 @@
-#![allow(dead_code)]
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use std::{
+    fs::{self, OpenOptions},
+    io::Write,
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -28,7 +30,6 @@ impl BlockChain {
     pub fn add_pending_block(&self, block: Block) {
         let mut data = self.data.lock().unwrap();
         data.add_pending_block(block);
-        println!("Pending blocks: {:?}", data.pending_blocks);
     }
 
     pub fn add_block(&self, block: Block) {
@@ -45,31 +46,33 @@ impl BlockChain {
         let data = self.data.lock().unwrap();
         data.input_to_block(block_input)
     }
+
+    pub fn num_blocks(&self) -> usize {
+        let data = self.data.lock().unwrap();
+        data.blocks.len()
+    }
+
+    pub fn get_blocks(&self) -> String {
+        let data = self.data.lock().unwrap();
+        serde_json::to_string(&data.blocks).unwrap()
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct BlockChainData {
     blocks: Vec<Block>,
-    nb_blocks: u32,
     pending_blocks: Vec<Block>,
 }
 
 impl BlockChainData {
     fn new() -> BlockChainData {
+        let file =
+            fs::read_to_string("blockchain.json").expect("Something went wrong reading the file");
+
+        let blocks: Vec<Block> = serde_json::from_str(&file).unwrap();
+
         BlockChainData {
-            blocks: vec![Block {
-                index: 0,
-                timestamp: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis(),
-                sender: String::from("Alice"),
-                receiver: String::from("Bob"),
-                file_hash: String::from("foo"),
-                hash: Some(String::from("genesis")),
-                prev_hash: Some(String::new()),
-            }],
-            nb_blocks: 0,
+            blocks,
             pending_blocks: Vec::new(),
         }
     }
@@ -82,7 +85,18 @@ impl BlockChainData {
 
     fn add_block(&mut self, block: Block) {
         self.blocks.push(block);
-        self.nb_blocks += 1;
+        self.save_to_file();
+    }
+
+    fn save_to_file(&self) {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open("blockchain.json")
+            .unwrap();
+
+        file.write_all(serde_json::to_string(&self.blocks).unwrap().as_bytes())
+            .unwrap();
     }
 
     fn mine(&mut self, input: BlockInput) -> Result<()> {
@@ -97,7 +111,6 @@ impl BlockChainData {
                 b.prev_hash = Some(self.blocks.last().unwrap().hash.clone().unwrap());
                 b.hash();
                 self.add_block(b);
-                println!("Blocks: {:?}", self.blocks);
                 Ok(())
             }
             None => {
@@ -109,13 +122,13 @@ impl BlockChainData {
     pub fn input_to_block(&self, input: BlockInput) -> Block {
         Block::new(
             input,
-            self.nb_blocks + 1,
+            self.blocks.len() as u32,
             self.blocks.last().unwrap().hash.clone().unwrap(),
         )
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Block {
     index: u32,
     timestamp: u128,

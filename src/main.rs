@@ -10,9 +10,10 @@ use sendit::{
     operations::{run_operation, Operations},
     peertable::PeerTable,
 };
+use simple_logger::SimpleLogger;
 
 fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: BlockChain) {
-    println!("New client: {:?}", stream.peer_addr().unwrap());
+    log::info!("New client: {:?}", stream.peer_addr().unwrap());
     let mut buffer = [0; 1024];
     loop {
         let bytes_read = match stream.read(&mut buffer) {
@@ -38,12 +39,14 @@ fn handle_client(mut stream: TcpStream, peer_table: PeerTable, mut blockchain: B
 }
 
 fn main() -> std::io::Result<()> {
+    SimpleLogger::new().init().unwrap();
+
     let addr = "0.0.0.0:5000";
     let listener = TcpListener::bind(addr)?;
     let peer_table = PeerTable::new();
     let blockchain = BlockChain::new();
 
-    println!("Listening on {}", addr);
+    log::info!("Listening on {}", addr);
 
     thread::scope(|s| {
         for stream in listener.incoming() {
